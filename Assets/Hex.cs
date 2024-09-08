@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using System.Linq;
 
 /// <summary>
 /// The Hex class defines the grid position, world space position, size, 
@@ -11,7 +12,7 @@ public class Hex {
 
     public Hex(HexMap hexMap, int q, int r)
     {
-        this.hexMap = hexMap;
+        this.HexMap = hexMap;
 
         this.Q = q;
         this.R = r;
@@ -33,8 +34,10 @@ public class Hex {
     // Marks a hex as being a lake tile if elevation < flat
     public bool isLake;
 
+    HashSet<Unit> units;
 
-    private HexMap hexMap;
+
+    public readonly HexMap HexMap;
 
     static readonly float WIDTH_MULTIPLIER = Mathf.Sqrt(3) / 2;
 
@@ -72,10 +75,15 @@ public class Hex {
         return HexWidth();
     }
 
-    public Vector3 PositionFromCamera( Vector3 cameraPosition, float numRows, float numColumns)
+    public Vector3 PositionFromCamera() 
     {
-        float mapHeight = numRows * HexVerticalSpacing();
-        float mapWidth  = numColumns * HexHorizontalSpacing();
+        return HexMap.GetHexPosition(this);
+    }
+
+    public Vector3 PositionFromCamera(Vector3 cameraPosition, float NumRows, float NumColumns)
+    {
+        float mapHeight = NumRows * HexVerticalSpacing();
+        float mapWidth  = NumColumns * HexHorizontalSpacing();
 
         Vector3 position = Position();
 
@@ -104,12 +112,34 @@ public class Hex {
         int dS = Mathf.Abs(a.S - b.S);
 
         // Handle wrapping for Q
-        if (dQ > a.hexMap.NumColumns / 2)
+        if (dQ > a.HexMap.NumColumns / 2)
         {
-            dQ = a.hexMap.NumColumns - dQ;
+            dQ = a.HexMap.NumColumns - dQ;
         }
 
         // The hex distance is the maximum of the differences
         return Mathf.Max(dQ, dR, dS);
+    }
+
+    public void AddUnit(Unit unit) 
+    {
+        if (units == null) 
+        {
+            units = new HashSet<Unit>();
+        }
+
+        units.Add(unit);
+    }
+
+    public void RemoveUnit(Unit unit) 
+    {
+        if (units != null) 
+        {
+            units.Remove(unit);
+        }
+    }
+
+    public Unit[] Units() {
+        return units.ToArray();
     }
 }

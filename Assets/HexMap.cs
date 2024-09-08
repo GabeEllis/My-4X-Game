@@ -5,9 +5,22 @@ using UnityEngine;
 public class HexMap : MonoBehaviour {
 
 	// Use this for initialization
-	void Start () {
+	void Start () 
+    {
         GenerateMap();
 	}
+
+    void Update() 
+    {
+        if (Input.GetKeyDown(KeyCode.Space)) 
+        {
+            if (units != null) {
+                foreach(Unit u in units) {
+                    u.DoTurn();
+                }
+            }
+        }
+    }
 
     public GameObject HexPrefab;
 
@@ -27,6 +40,9 @@ public class HexMap : MonoBehaviour {
     public Material MatMountains;
     public Material MatDesert;
 
+    public GameObject UnitDwarfPrefab;
+
+
     // Tiles with height above whatever, is a whatever
     [System.NonSerialized] public float HeightMountain = 1f;
     [System.NonSerialized] public float HeightHill = 0.6f;
@@ -43,6 +59,10 @@ public class HexMap : MonoBehaviour {
     // TODO: Link up with the Hex class's version of this
     private Hex[,] hexes;
     private Dictionary<Hex, GameObject> hexToGameObjectMap;
+
+    private HashSet<Unit> units;
+    private Dictionary<Unit, GameObject> unitToGameObjectMap;
+
 
     public Hex GetHexAt(int x, int y)
     {
@@ -69,6 +89,18 @@ public class HexMap : MonoBehaviour {
         }
     }
 
+    public Vector3 GetHexPosition(int q, int r) 
+    {
+        Hex hex = GetHexAt(q, r);
+
+        return GetHexPosition(hex);
+    }
+
+    public Vector3 GetHexPosition(Hex hex) 
+    {
+        return hex.PositionFromCamera(Camera.main.transform.position, NumRows, NumColumns);
+    }  
+
     virtual public void GenerateMap()
     {
         // Generate a map filled with ocean
@@ -76,7 +108,7 @@ public class HexMap : MonoBehaviour {
         hexes = new Hex[NumColumns, NumRows];
         hexToGameObjectMap = new Dictionary<Hex, GameObject>();
 
-        // Loops through each hex in the hexMap.
+        // Loops through each hex in the HexMap.
         for (int column = 0; column < NumColumns; column++)
         {
             for (int row = 0; row < NumRows; row++)
@@ -113,11 +145,14 @@ public class HexMap : MonoBehaviour {
         }
 
         UpdateHexVisuals();
+
+        Unit unit = new Unit();
+        SpawnUnitAt(unit, UnitDwarfPrefab, 36, 15);
     }
 
     public void UpdateHexVisuals()
     {
-        // Loops through each hex in the hexMap.
+        // Loops through each hex in the HexMap.
         for (int column = 0; column < NumColumns; column++)
         {
             for (int row = 0; row < NumRows; row++)
@@ -277,7 +312,7 @@ public class HexMap : MonoBehaviour {
 
     public void findLakeHexes() 
     {
-        // Loops through each hex in the hexMap.
+        // Loops through each hex in the HexMap.
         for (int column = 0; column < NumColumns; column++)
         {
             for (int row = 0; row < NumRows; row++)
@@ -349,5 +384,26 @@ public class HexMap : MonoBehaviour {
                 }
             }
         }
+    }
+
+    public void SpawnUnitAt(Unit unit, GameObject prefab, int q, int r) 
+    {
+        if (units == null) 
+        {
+            units = new HashSet<Unit>();
+            unitToGameObjectMap = new Dictionary<Unit, GameObject>();
+        }
+
+        Hex myHex = GetHexAt(q, r);
+        GameObject myHexGo = hexToGameObjectMap[myHex];
+        unit.SetHex(myHex);
+
+        GameObject unitGo = (GameObject)Instantiate(prefab, myHexGo.transform.position, Quaternion.identity, myHexGo.transform);
+        unit.OnUnitMoved += unitGo.GetComponent<UnitView>().OnUnitMoved;
+
+        unit.OnUnitMoved(myHex, myHex);
+
+        units.Add(unit);
+        unitToGameObjectMap.Add(unit, unitGo);
     }
 }
